@@ -403,7 +403,7 @@ function frame(state, cols, rows, mode, hue, opts = {}) {
 
   const status = state.status === "live" ? p.acc("● live") : p.dim(`○ ${state.status || "connecting"}`);
   const headL = `${p.mark(" Unl ")} ${p.bold("terminal")}${state.workspace ? p.dim(`  ·  ${state.workspace}`) : ""}`;
-  const headR = `${p.dim(`watching ${state.agent || "every agent"}`)}  ${status} `;
+  const headR = `${p.dim(`watching ${state.agent || "every AI"}`)}  ${status} `;
   const gap = cols - vlen(headL) - vlen(headR);
   const header = gap >= 1 ? headL + " ".repeat(gap) + headR : fit(headL, cols);
   // Read-only: no keys to offer, and it says it runs behind.

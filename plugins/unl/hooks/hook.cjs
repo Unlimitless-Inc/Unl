@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * The Unl hook, as `npx unlimitless init` installs it at ~/.unl/hook.cjs.
+ * The Unl hook, as `npx unlimitless connect` installs it at ~/.unl/hook.cjs.
  *
  * WHAT IT IS. The stranger's copy of the house hook (.claude/hooks/unl-inject.sh + its renderer):
  * the same request, the same rendering, the same failure lines, in one dependency-free Node file
@@ -229,7 +229,7 @@ function render(resp, part2File = "") {
 function failureLine(r, what) {
   if (r.error === "timeout") return `unl: ${what} did not answer within ${TIMEOUT_MS / 1000}s. This turn runs without your decisions. Set UNL_ASK_TIMEOUT to wait longer.`;
   if (r.error) return `unl: could not reach ${BASE}. This turn runs without your decisions.`;
-  if (r.status === 401 || r.status === 403) return "unl: your key was refused (revoked?). Run `npx unlimitless init` again to sign in. This turn runs without your decisions.";
+  if (r.status === 401 || r.status === 403) return "unl: your key was refused (revoked?). Run `npx unlimitless login` again to sign in. This turn runs without your decisions.";
   return `unl: ${what} answered HTTP ${r.status}. This turn runs without your decisions.`;
 }
 

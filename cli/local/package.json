@@ -1,0 +1,26 @@
+{
+  "name": "unl-local",
+  "private": true,
+  "version": "0.4.1",
+  "description": "The local Unl inside the unlimitless package: one record of what you decided and why, kept in a local database on your own machine, that every coding agent you use works from. No login, no account, no key. Run it as `npx unlimitless init` from the unlimitless package; this folder is not published on its own.",
+  "license": "MIT",
+  "files": [
+    "bin",
+    "lib",
+    "runtime",
+    "docs",
+    "README.md",
+    "SECURITY.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.15"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Unlimitless-Inc/unl.git",
+    "directory": "cli/local"
+  }
+}

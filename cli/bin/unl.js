@@ -1,25 +1,32 @@
 #!/usr/bin/env node
 "use strict";
 /*
- * unl — the Unl CLI. `npm install -g unlimitless`, then `unl`; `npx unlimitless …` runs
- * the same commands without installing.
+ * unl — the Unl CLI. `npm install -g unlimitless`, then `unl`; `npx unlimitless …` runs the same commands without
+ * installing.
  *
- * `unl` on its own is the starter, as `claude` is Claude Code's: it signs you in the first time and
- * opens the full-screen Unl terminal; with a key on the machine it opens straight in. It never wires
- * the current folder. That stays `init`'s job.
+ * ONE PACKAGE, TWO DOORS.
+ * `unl init` and the record's own commands (status, list, why, keep, replace, retire, review, sync,
+ * remove, receipt, adr, telemetry, serve, judge, export, up) are the free Unl, on this machine, with no
+ * login, no account and no key at install or in use. They live in ../local and run there.
+ * The hosted Unl is the step up: `unl login` signs this machine in, `unl connect` wires a project to it,
+ * and `unl terminal` (or bare `unl`, once signed in) shows its side of each turn.
  *
- * THE PRINCIPLE: the developer INSTALLS Unl; they never have to OPERATE it. So this command asks
+ * `unl` on its own is the starter, as `claude` is Claude Code's: with a key on the machine it opens the
+ * full-screen Unl terminal. With none it prints the help. It never starts a sign-in by itself, and it
+ * never wires the current folder.
+ *
+ * THE PRINCIPLE: the developer INSTALLS Unl; they never have to OPERATE it. So connect asks
  * exactly two things of them: sign in once in the browser, and say yes (or no) to Unl reading the
  * files where they already wrote their decisions. Everything else is wiring, done here, printed.
  *
- *   init            Claude Code (default): sign-in, MCP server, the enforcing hook, unl.md, import
- *   init --cursor   Cursor: the same, wired through Cursor's MCP config and session-start hook
- *   init --codex    Codex: the server (read tools pre-approved, OAuth sign-in) and the per-turn hook, in ~/.codex/config.toml
- *   --dry-run       print what init would change, and change nothing (no sign-in either)
- *   --repair        update init's own entries in place (its local "unl" server); never adds a second
- *   (no command)    sign in if this machine has no key, then the Unl terminal
+ *   connect            Claude Code (default): sign-in, MCP server, the enforcing hook, unl.md, import
+ *   connect --cursor   Cursor: the same, wired through Cursor's MCP config and session-start hook
+ *   connect --codex    Codex: the server (read tools pre-approved, OAuth sign-in) and the per-turn hook, in ~/.codex/config.toml
+ *   --dry-run       print what connect would change, and change nothing (no sign-in either)
+ *   --repair        update connect's own entries in place (its local "unl" server); never adds a second
+ *   (no command)    the Unl terminal on a signed-in machine; the help on one that is not
  *   login / logout  sign this machine in, or remove its key
- *   status          what is installed on this machine and in this folder
+ *   status          what Unl holds in this folder, and what of the hosted Unl is on this machine
  *   --version, --help
  *   terminal        the Unl terminal: Unl's side of each turn, live, full screen (--agent <id> for one agent, --lines for one line per step)
  *   --yes           answer yes to the import (for scripted installs)
@@ -46,6 +53,9 @@ const KEY_FILE = path.join(HOME, "reach-key");
 const PKG = path.join(__dirname, "..");
 /** What to tell a person to type: `unl` when installed, `npx unlimitless` when run through npx. */
 const SELF = selfCommand();
+/** The free Unl, on this machine. Loaded only when one of its commands runs, so the hosted commands never open a database. */
+const freeUnl = () => require("../local/bin/unl.js");
+const LOCAL_COMMANDS = ["status", "list", "why", "keep", "replace", "retire", "review", "sync", "remove", "receipt", "adr", "telemetry", "serve", "judge", "export", "up", "mcp", "address"];
 
 const say = (s = "") => process.stdout.write(s + "\n");
 const step = (s) => say(`\n• ${s}`);
@@ -108,11 +118,11 @@ async function firstHour(repo, key, flags) {
   for (const f of files) say(`    ${f}`);
   let answer = flags.has("--yes") ? "yes" : await ask("  Should Unl read them and pull out the decisions for you to check? Nothing is kept until you confirm it with your agent. [Y/n] ");
   if (!process.stdin.isTTY && !flags.has("--yes")) {
-    say(`  Skipped: this is not an interactive terminal. Run \`${SELF} init --yes\` to read them.`);
+    say(`  Skipped: this is not an interactive terminal. Run \`${SELF} connect --yes\` to read them.`);
     return;
   }
   if (/^n/i.test(answer)) {
-    say(`  Left alone. Run \`${SELF} init\` again whenever you want Unl to read them.`);
+    say(`  Left alone. Run \`${SELF} connect\` again whenever you want Unl to read them.`);
     return;
   }
   const results = await importFiles({ apiBase: API, key, repo, files, home: HOME });
@@ -141,7 +151,8 @@ function claudeListText() {
   return r.status === 0 ? String(r.stdout || "") : "";
 }
 
-async function init(flags) {
+/** `unl connect`: wire this project to the hosted Unl (what `init` did before the free Unl came into the package). */
+async function connect(flags) {
   const repo = process.cwd();
   const cursor = flags.has("--cursor");
   const codex = !cursor && flags.has("--codex");
@@ -155,7 +166,7 @@ async function init(flags) {
   // config, so that still happens; only unl.md and the read step, which belong to a project, are skipped.
   const homeRun = notAProject(repo, os.homedir());
   if (homeRun && !codex) {
-    say(`This is your home folder, not a project. Run \`${SELF} init${cursor ? " --cursor" : ""}\` inside the project you want ${agentName} to reach Unl from.`);
+    say(`This is your home folder, not a project. Run \`${SELF} connect${cursor ? " --cursor" : ""}\` inside the project you want ${agentName} to reach Unl from.`);
     return;
   }
 
@@ -171,7 +182,7 @@ async function init(flags) {
   }
   const serverAct = plan.addServer ? "add" : plan.replaceServer ? "replace" : null;
   if (dry) {
-    say("\nDry run, nothing written. init would:");
+    say("\nDry run, nothing written. connect would:");
     say(`  ${serverAct === "add" ? "add the unl server" : serverAct === "replace" ? "update the unl server in place" : "leave the server as it is"}`);
     say(`  ${plan.addHook ? "add the hook that serves your decisions on every turn" : "leave the hook as it is"}`);
     say(`  ${plan.writeUnlMd ? "write unl.md" : "leave unl.md as it is"}`);
@@ -179,7 +190,7 @@ async function init(flags) {
   }
   if (!serverAct && !plan.addHook && !plan.writeUnlMd) {
     say(`\nNothing was added: this folder already reaches Unl, and a second hook or server would serve every turn twice.`);
-    if (!repair && found.servers.some((s) => s.scope === "local" && s.name === "unl")) say(`To update Unl's own entry in place, run \`${SELF} init --repair\`.`);
+    if (!repair && found.servers.some((s) => s.scope === "local" && s.name === "unl")) say(`To update Unl's own entry in place, run \`${SELF} connect --repair\`.`);
     return;
   }
 
@@ -213,7 +224,7 @@ async function init(flags) {
     if (serverAct) {
       const m = wireClaudeMcp(repo, { url: MCP_URL, headersPath, replace: serverAct === "replace" });
       if (m.ok) say(`  MCP server "unl" ${m.replaced ? "updated in place" : m.kept ? "already there" : "added"} for this project (no second sign-in needed).`);
-      else say(`  MCP server not added: ${m.reason}. The hook below still works; add the server later with \`${SELF} init\`.`);
+      else say(`  MCP server not added: ${m.reason}. The hook below still works; add the server later with \`${SELF} connect\`.`);
     } else say("  MCP server: Unl's server is already reachable here, so none was added.");
     if (plan.addHook) {
       const h = wireClaudeHook(repo, hookPath);
@@ -222,7 +233,7 @@ async function init(flags) {
     } else say("  Hook: a hook already serves Unl here, so none was added.");
   }
   if (homeRun) {
-    say("  unl.md: not written, because this is your home folder. Run init again inside a project to add it there.");
+    say("  unl.md: not written, because this is your home folder. Run connect again inside a project to add it there.");
   } else {
     say(`  unl.md: ${plan.writeUnlMd && writeUnlMd(repo, path.join(PKG, "templates", "unl.md")) ? "written (how any agent reaches Unl; your decisions stay in Unl)" : "already there, left as is"}`);
     step("Read what you already decided");
@@ -231,12 +242,22 @@ async function init(flags) {
 
   say("\n" + surfaceTableText());
   say(`\nDone. Open ${agentName} here and work as normal. Unl stays in the background.`);
+  say("When you repeat a decision, your agent can offer to keep your exact words. It saves only on your yes.");
+  say("Agents starting before sign-in: POST https://api.unlimitless.ai/public/agent-start with JSON words and consent (both verbatim). Give the returned private claim_url to the person to review and Keep within 30 days. Full steps: https://unlimitless.ai/start.md");
   const last = closingLine(surface, { hookAdded });
   if (last) say(last);
 }
 
-async function status() {
+async function status(rest) {
+  // What the free Unl holds here comes first; the hosted Unl's lines follow where any of it is on this machine.
+  await freeUnl().run(["status", ...rest]);
   const key = readKey();
+  const hookInstalled = fs.existsSync(path.join(HOME, "hook.cjs"));
+  if (!key && !hookInstalled) {
+    say(`The hosted Unl is not on this machine. \`${SELF} connect\` adds it to a project, when you want it.`);
+    return;
+  }
+  say("");
   say(`Key on this machine: ${key ? ((await keyWorks(key)) ? "present, accepted" : `present, REFUSED (run ${SELF} login to sign in again)`) : `none (run ${SELF} login)`}`);
   say(`Hook runtime: ${fs.existsSync(path.join(HOME, "hook.cjs")) ? "installed" : "not installed"}`);
   const local = path.join(process.cwd(), ".claude", "settings.local.json");
@@ -258,20 +279,19 @@ function openTerminal(key, rest, tip) {
 }
 
 /**
- * `unl` on its own: with a working key, straight into the terminal; with none, or one the
- * server refused, the header, the browser sign-in, one line, and then the terminal. A key the server
- * could not be asked about opens the terminal anyway, which says it is reconnecting: sending someone
- * offline through a sign-in cannot work either.
+ * `unl` on its own: with a working key, straight into the terminal. With none it prints the
+ * header and the help, and starts no sign-in: the free Unl never asks for one, and signing in
+ * is `unl login`'s, on the person's word. A key the server refused says so and names `unl login`. A key
+ * the server could not be asked about opens the terminal anyway, which says it is reconnecting.
  */
 async function start(rest) {
-  let key = readKey();
+  const key = readKey();
   const state = key ? await keyState(API, key) : "none";
   if (state === "none" || state === "refused") {
     say(headerText(tuiPaint(colorMode(process.env, !!process.stdout.isTTY), 186), version()));
-    if (state === "refused") say(" This machine's key was not accepted (revoked?), so sign in again.\n");
-    key = await signInAndStore(undefined, fromOf(process.argv), " ");
-    // The signed-in line stays readable for a moment before the full screen takes over.
-    if (process.stdout.isTTY) await new Promise((r) => setTimeout(r, 1200));
+    if (state === "refused") say(` This machine's key was not accepted (revoked?). Run \`${SELF} login\` to sign in again.\n`);
+    say(helpText(SELF));
+    return;
   }
   const tip = unwiredProject(process.cwd(), { home: os.homedir() }) ? initOffer(SELF) : "";
   return openTerminal(key, rest, tip);
@@ -304,11 +324,14 @@ function logout() {
   const flags = new Set(rest);
   if (!cmd || (cmd.startsWith("--") && !["--version", "--help"].includes(cmd))) return start(process.argv.slice(2));
   if (cmd === "--version" || cmd === "-v" || cmd === "version") return say(version());
-  if (cmd === "--help" || cmd === "-h" || cmd === "help") return say(helpText(SELF));
-  if (cmd === "init") return init(flags);
+  if (cmd === "--help" || cmd === "-h" || cmd === "help") return rest[0] === "local" ? freeUnl().run(["help"]) : say(helpText(SELF));
+  // The free Unl: init and the record's own commands run in ../local, exactly as they do there.
+  if (cmd === "init") return freeUnl().run(["init", ...rest]);
+  if (cmd === "connect") return connect(flags);
   if (cmd === "login") return login();
   if (cmd === "logout") return logout();
-  if (cmd === "status") return status();
+  if (cmd === "status") return status(rest);
+  if (LOCAL_COMMANDS.includes(cmd)) return freeUnl().run([cmd, ...rest]);
   if (cmd === "terminal") {
     const key = readKey();
     if (!key) throw new Error(`No key on this machine. Run \`${SELF}\` to sign in.`);

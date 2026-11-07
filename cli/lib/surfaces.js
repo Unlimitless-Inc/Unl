@@ -9,12 +9,12 @@ const SURFACE_REACH = [
   {
     surface: "Claude Code",
     reach: "Enforced on every turn. A hook sends each message to Unl and hands the agent what bears on it before it answers.",
-    recommend: "npx unlimitless init",
+    recommend: "npx unlimitless connect",
   },
   {
     surface: "Cursor",
     reach: "Enforced once per session in the Cursor CLI, by a session-start hook (not yet verified in the Cursor app). After that the agent must call Unl itself.",
-    recommend: "npx unlimitless init --cursor",
+    recommend: "npx unlimitless connect --cursor",
   },
   {
     surface: "ChatGPT, Claude and other chat apps",

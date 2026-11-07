@@ -110,7 +110,7 @@ function listen() {
 }
 
 const minutesLeft = (ms) => Math.max(1, Math.ceil(ms / 60000));
-const expired = () => new Error("The sign-in expired after 10 minutes without an approval. Run `unl` again to start a fresh one.");
+const expired = () => new Error("The sign-in expired after 10 minutes without an approval. Run `npx unlimitless login` again to start a fresh one.");
 
 /** The hosted handoff: poll Unl with our state until the browser has come back through it. */
 function waitViaUnl({ apiBase, state, say, timeoutMs, pollMs, firstPoll }) {
@@ -167,7 +167,7 @@ function waitViaLoopback({ server, redirectUri, state, say, timeoutMs }) {
       const code = u.searchParams.get("code");
       const ok = !err && code && u.searchParams.get("state") === state;
       res.writeHead(ok ? 200 : 400, { "content-type": "text/html; charset=utf-8" });
-      res.end(DONE_PAGE(ok, ok ? "Return to your terminal. You can close this tab." : "Return to your terminal and run unl again."));
+      res.end(DONE_PAGE(ok, ok ? "Return to your terminal. You can close this tab." : "Return to your terminal and run npx unlimitless login again."));
       clearTimeout(timer);
       clearInterval(note);
       if (ok) resolve(code);

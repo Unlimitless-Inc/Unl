@@ -31,6 +31,79 @@ const DIRS = [".cursor/rules", "docs/adr", "docs/adrs", "docs/decisions", "adr",
 const MAX_FILES = 20;
 const MAX_BYTES = 128000; // the import route's own text cap (V1_IMPORT_TEXT_CAP)
 
+/**
+ * THE STEP UP FROM THE FREE OPEN UNL. The open install keeps one page per decision in
+ * .unl/decisions/, each carrying its record, and the hosted importer reads those pages as the records
+ * they are: the statement and reason exactly as kept. They go as ONE entry, listed first so the file cap
+ * never drops a decision, joined into documents under the route's size cap.
+ * The open install has already read the rules files it reads (the same root files as here, and the
+ * Cursor rules) and put each rule to the person, who kept it or did not. So when its pages are here they
+ * stand in for those files, and those files are not sent: sending them would put the same decisions
+ * to the person a second time, re-guessed from prose and some without their reason.
+ *
+ * AN ADR FOLDER IS HELD TO WHAT THE PAGES THEMSELVES SAY. The open install now reads
+ * decision records too, and each page it writes names the file its decision was read from. A record
+ * file is left out here only when one of those pages names it, because then its decision arrives as
+ * the page, kept or replaced exactly as the person left it, and the same words must not arrive a
+ * second time re-read from prose. A record no page names is still sent: one written since the open
+ * install last read the folder, one the person has not said yes to, or any record at all where the
+ * open install on this machine predates reading them. Nothing is left out on the strength of a folder's
+ * name, so nothing the open install did not carry is dropped.
+ */
+const OPEN_DECISIONS = ".unl/decisions/";
+const READ_BY_OPEN = (rel) => ROOT_FILES.includes(rel) || /^\.cursor[\\/]rules[\\/]/.test(rel);
+const posix = (p) => String(p).replace(/\\/g, "/");
+
+/** The files the open install's own pages say a kept decision was read from, as paths from the project root. */
+function keptFrom(repo) {
+  const out = new Set();
+  for (const text of openPages(repo)) {
+    const m = /<!-- unl:record\s*\n([\s\S]*?)\n-->/.exec(text);
+    if (!m) continue;
+    try {
+      const file = (JSON.parse(m[1]).source || {}).file;
+      if (typeof file === "string" && file) out.add(posix(file));
+    } catch {}
+  }
+  return out;
+}
+
+function openPages(repo) {
+  let entries = [];
+  try {
+    entries = fs.readdirSync(path.join(repo, OPEN_DECISIONS));
+  } catch {
+    return [];
+  }
+  const pages = [];
+  for (const e of entries.sort()) {
+    if (!/\.md$/i.test(e)) continue;
+    try {
+      const text = fs.readFileSync(path.join(repo, OPEN_DECISIONS, e), "utf8");
+      if (text.includes("<!-- unl:record") && Buffer.byteLength(text) <= MAX_BYTES) pages.push(text);
+    } catch {}
+  }
+  return pages;
+}
+
+/** The documents one listed entry sends: a file as it stands, or the open install's pages in as few documents as fit. */
+function documentsOf(repo, rel) {
+  if (rel === OPEN_DECISIONS) {
+    const docs = [];
+    let cur = "";
+    for (const page of openPages(repo)) {
+      const next = cur ? `${cur}\n\n${page}` : page;
+      if (cur && Buffer.byteLength(next) > MAX_BYTES) {
+        docs.push(cur);
+        cur = page;
+      } else cur = next;
+    }
+    if (cur) docs.push(cur);
+    return docs.map((text, i) => ({ name: docs.length > 1 ? `${OPEN_DECISIONS} (${i + 1} of ${docs.length})` : OPEN_DECISIONS, key: `${OPEN_DECISIONS}#${i + 1}`, text }));
+  }
+  return [{ name: rel, key: rel, text: fs.readFileSync(path.join(repo, rel), "utf8") }];
+}
+
 function discoverFiles(repo) {
   const found = [];
   const add = (rel) => {
@@ -40,6 +113,8 @@ function discoverFiles(repo) {
       if (st.isFile() && st.size > 0 && st.size <= MAX_BYTES) found.push(rel);
     } catch {}
   };
+  const open = openPages(repo).length > 0;
+  if (open) found.push(OPEN_DECISIONS);
   for (const f of ROOT_FILES) add(f);
   for (const d of DIRS) {
     let entries = [];
@@ -50,7 +125,8 @@ function discoverFiles(repo) {
     }
     for (const e of entries.sort()) if (/\.(md|mdc|markdown|txt)$/i.test(e)) add(path.join(d, e));
   }
-  return [...new Set(found)].slice(0, MAX_FILES);
+  const carried = open ? keptFrom(repo) : new Set();
+  return [...new Set(found)].filter((rel) => !(open && (READ_BY_OPEN(rel) || carried.has(posix(rel))))).slice(0, MAX_FILES);
 }
 
 function ledgerPath(home) {
@@ -67,10 +143,10 @@ function readLedger(home) {
 async function importFiles({ apiBase, key, repo, files, home }) {
   const ledger = readLedger(home);
   const results = [];
-  for (const rel of files) {
-    const text = fs.readFileSync(path.join(repo, rel), "utf8");
+  const docs = files.flatMap((rel) => documentsOf(repo, rel));
+  for (const { name: rel, key, text } of docs) {
     const digest = crypto.createHash("sha256").update(text).digest("hex");
-    const id = `${path.resolve(repo)}::${rel}`;
+    const id = `${path.resolve(repo)}::${key}`;
     if (ledger[id] === digest) {
       results.push({ file: rel, skipped: true, found: 0 });
       continue;
@@ -98,4 +174,4 @@ async function importFiles({ apiBase, key, repo, files, home }) {
   return results;
 }
 
-module.exports = { discoverFiles, importFiles };
+module.exports = { discoverFiles, importFiles, OPEN_DECISIONS };

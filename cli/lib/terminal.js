@@ -11,7 +11,7 @@
  * weighed/kept/held, the held ones dimmed with the reason they were held, the heads-up's own text, the
  * changes by name (or no line), every receiver in plain words, and the same turn again as one line.
  *
- *   terminal                 every agent
+ *   terminal                 every AI
  *   terminal --agent <id>    one run, seat or surface
  */
 
@@ -237,7 +237,7 @@ async function runTerminal({ api, key, agent, say: sayRaw, color, self = "unl", 
   // Unl's reply is written after its turn: a turn printed without one prints it once when it lands.
   const voiced = new Set();
   const q = `?limit=${PAGE}${agent ? `&agent=${encodeURIComponent(agent)}` : ""}`;
-  say(`${c.clay("✻")} ${c.bold("Unl terminal")} ${c.dim(`· watching ${agent || "every agent"} · what your AI sends Unl is kept in your workspace, secrets stripped · ctrl-c to leave`)}\n`);
+  say(`${c.clay("✻")} ${c.bold("Unl terminal")} ${c.dim(`· watching ${agent || "every AI"} · what your AI sends Unl is kept in your workspace, secrets stripped · ctrl-c to leave`)}\n`);
   let quietSaid = false;
   let faultSaid = false;
   let lastSig = null;

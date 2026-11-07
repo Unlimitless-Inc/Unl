@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:unl:decision-format:1",
+  "title": "Kept decision, format version 1",
+  "description": "A decision a person settled, with its reasons and where it came from, as one object. The id is a content address over the kernel; see README.md for how to compute and check it.",
+  "$ref": "#/$defs/Decision",
+  "$defs": {
+    "Decision": {
+      "type": "object",
+      "required": ["id", "ruling", "why", "provenance"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^walk1:sha256:[0-9a-f]{64}$", "description": "Content address over the kernel." },
+        "ruling": { "$ref": "#/$defs/Ruling" },
+        "why": { "$ref": "#/$defs/Why" },
+        "provenance": { "$ref": "#/$defs/Provenance" },
+        "transport": { "$ref": "#/$defs/Transport" }
+      }
+    },
+    "Ruling": {
+      "type": "object",
+      "required": ["id", "title", "statement", "authority_scope", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "description": "Kernel. The decision's own identifier, chosen by the implementation that kept it. The hosted service uses UUIDs." },
+        "title": { "type": "string", "description": "Kernel. A short name." },
+        "statement": { "type": "string", "description": "Kernel. The decision, in the words it was settled in." },
+        "authority_scope": { "type": "array", "items": { "type": "string" }, "description": "Kernel. What the decision applies to, as tags. Order is part of the kernel." },
+        "status": { "type": "string", "enum": ["canonical", "superseded", "candidate"], "description": "Lifecycle, not kernel." },
+        "is_standing": { "type": "boolean", "description": "Lifecycle, not kernel. True when it applies across every project of its owner." },
+        "is_north_star": { "type": "boolean", "description": "Lifecycle, not kernel. True when its owner marked it as a guiding aim." },
+        "venture_id": { "type": ["string", "null"], "description": "Lifecycle, not kernel. The project it belongs to, if any." }
+      }
+    },
+    "Pillar": {
+      "type": "object",
+      "required": ["type", "statement"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "description": "One of constraint, tension, prior_ruling, option_weighed, fact, precedent, principle, rejected_alternative, verbatim_quote. Readers must accept a value they do not know." },
+        "statement": { "type": ["string", "null"] }
+      }
+    },
+    "Why": {
+      "type": "object",
+      "required": ["overall_why", "derivation_shape", "pillars"],
+      "additionalProperties": false,
+      "properties": {
+        "overall_why": { "type": ["string", "null"], "description": "Kernel. The reason, as the person confirmed it." },
+        "derivation_shape": { "type": ["string", "null"], "description": "Kernel. How the reasoning was reached, in one line, if recorded." },
+        "pillars": { "type": "array", "items": { "$ref": "#/$defs/Pillar" }, "description": "Kernel. The supporting points, in order. What was ruled out lives here as rejected_alternative." }
+      }
+    },
+    "Provenance": {
+      "type": "object",
+      "required": ["wasGeneratedBy", "wasDerivedFrom", "wasRevisionOfAll", "ratifiedBy", "ratifiedAt", "proposerModel", "proposedAt"],
+      "additionalProperties": false,
+      "properties": {
+        "wasGeneratedBy": { "type": ["string", "null"], "description": "Kernel. The deliberation that produced it." },
+        "wasDerivedFrom": { "type": "array", "items": { "type": "string" }, "description": "Kernel. Sources it cites, in order." },
+        "ratifiedBy": { "type": ["string", "null"], "description": "Kernel. The person who made it canon. Never a model." },
+        "ratifiedAt": { "type": ["string", "null"], "format": "date-time", "description": "Kernel. When they did, as an ISO 8601 UTC string with milliseconds." },
+        "proposerModel": { "type": ["string", "null"], "description": "Kernel. The model that proposed the wording, if any." },
+        "proposedAt": { "type": ["string", "null"], "description": "Kernel. When it was proposed, if recorded." },
+        "wasRevisionOf": { "type": ["string", "null"], "description": "Lifecycle, not kernel. The one decision it replaced, or null when it replaced none or several." },
+        "wasRevisionOfAll": { "type": "array", "items": { "type": "string" }, "description": "Lifecycle, not kernel. Every decision it replaced, sorted." },
+        "supersededBy": { "type": ["string", "null"], "description": "Lifecycle, not kernel. The decision that replaced it, if retired." }
+      }
+    },
+    "Transport": {
+      "type": "object",
+      "required": ["served_at", "channel"],
+      "additionalProperties": false,
+      "properties": {
+        "served_at": { "type": "string", "format": "date-time" },
+        "channel": { "type": "string", "enum": ["serve", "walk"] }
+      }
+    },
+    "Proposal": {
+      "type": "object",
+      "required": ["id", "content", "why"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^cand1:sha256:[0-9a-f]{64}$" },
+        "content": { "type": "string" },
+        "why": { "type": "string" }
+      }
+    }
+  }
+}

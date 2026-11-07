@@ -12,7 +12,7 @@ This file does not hold them. It tells any coding agent where they are.
 
 ## Where it is enforced
 
-- Claude Code: `npx unlimitless init` installs a hook that serves the relevant decisions on every turn, whether or not the agent remembers to ask.
+- Claude Code: `npx unlimitless connect` installs a hook that serves the relevant decisions on every turn, whether or not the agent remembers to ask.
 - Cursor: the same command adds a session-start hook, so decisions arrive once per session. After that the agent has to call Unl itself.
 - Everywhere else: the agent has to call Unl itself. The lines above are how it knows when.
 
@@ -20,4 +20,4 @@ This file does not hold them. It tells any coding agent where they are.
 
 `npm install -g unlimitless`, then `unl`. The first time it signs you in; after that it opens the Unl terminal, which shows what Unl hands your agent on each turn.
 
-Set up or repair: `npx unlimitless init` · Reference: https://unlimitless.ai/developers
+Set up or repair: `npx unlimitless connect` · Reference: https://unlimitless.ai/developers

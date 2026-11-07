@@ -1,25 +1,35 @@
 {
   "name": "unlimitless",
-  "version": "0.3.6",
-  "description": "Install Unl in your coding agent: one command, one sign-in, and your decisions reach your agent with their reasons.",
+  "version": "0.4.1",
+  "description": "Unl keeps what you decided and why, on your own machine, and hands it to your coding agent when it bears. Free, no login: npx unlimitless init. The hosted Unl is the step up: npx unlimitless connect.",
   "homepage": "https://unlimitless.ai/developers",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Unlimitless-Inc/unl.git",
     "directory": "cli"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "bin": {
-    "unlimitless": "bin/unl.js",
-    "unl": "bin/unl.js"
+    "unl": "bin/unl.js",
+    "unlimitless": "bin/unl.js"
   },
   "files": [
     "bin",
     "lib",
     "runtime",
-    "templates"
+    "templates",
+    "local/bin",
+    "local/lib",
+    "local/runtime",
+    "local/docs",
+    "local/package.json",
+    "local/README.md",
+    "local/SECURITY.md"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.15"
   }
 }

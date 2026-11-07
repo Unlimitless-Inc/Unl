@@ -3,9 +3,12 @@
  * `unl` on its own — the starter. Neil: "in terminal for claude i just write claude,
  * i want to just write unl, do an oauth the way it works with claude and off we go."
  *
- * Bare `unl` signs in the first time (the same browser sign-in init uses) and opens the full-screen
- * terminal; with a key it opens straight in. Signing in never touches the current folder: wiring a
- * project stays `unl init`'s job, and the starter only offers it, in one quiet line.
+ * ONE PACKAGE, TWO DOORS. `unl
+ * init` and the record's commands are the free Unl on this machine (../local), with no account. The
+ * hosted Unl is the step up behind `unl login` and `unl connect`. So bare `unl` opens the Unl terminal
+ * only on a machine that is already signed in; on one that is not it prints the help, and never starts a
+ * sign-in by itself. Signing in never touches the current folder: wiring a project to the hosted Unl is
+ * `unl connect`'s job, and the terminal only offers it, in one quiet line.
  *
  * Everything here that decides what to print is pure, so the harness proves it without a network,
  * a browser or a terminal.
@@ -25,8 +28,8 @@ function version() {
 
 /**
  * The command a person should type next, as they actually reached this one. Installed with
- * `npm install -g unlimitless` it is `unl`; run through npx it is `npx unlimitless`, because `unl`
- * is not on their PATH and a line telling them to type it would be a dead end. Pure.
+ * `npm install -g unlimitless` it is `unl`; run through npx it is `npx unlimitless`, because `unl` is not on their
+ * PATH and a line telling them to type it would be a dead end. Pure.
  */
 function selfCommand(dir = __dirname, env = process.env) {
   const viaNpx = dir.split(path.sep).includes("_npx") || env.npm_command === "exec";
@@ -37,18 +40,29 @@ function selfCommand(dir = __dirname, env = process.env) {
 function helpText(self = "unl") {
   const pad = (s) => s.padEnd(self.length + 16);
   return [
-    "Unl brings your decisions, with their reasons, to the AI you work in.",
+    "Unl keeps what you decided and why, and hands it to the AI you work in when it bears.",
     "",
-    `Usage: ${self} [command]`,
+    `Usage: ${self} <command>`,
     "",
-    `  ${pad(self)}Open the Unl terminal. The first time, it signs you in.`,
-    `  ${pad(`${self} init`)}Add Unl to Claude Code in this project (--cursor for Cursor, --codex for Codex).`,
-    `  ${pad(`${self} login`)}Sign in on this machine.`,
-    `  ${pad(`${self} logout`)}Remove this machine's key.`,
-    `  ${pad(`${self} status`)}What is installed here.`,
+    "On this machine, free, with no account and nothing to sign in to:",
+    `  ${pad(`${self} init`)}Set Unl up in this project: read your rules files, keep them on your yes, wire your agent.`,
+    `  ${pad("")}Wires Claude Code (Cursor runs the same hooks). Add --codex for Codex.`,
+    `  ${pad(`${self} status`)}What Unl holds here and what is waiting for you.`,
+    `  ${pad(`${self} list`)}The decisions kept for this project. \`${self} why <id>\` gives one in full.`,
+    `  ${pad(`${self} keep`)}Keep a decision yourself: ${self} keep "<decision>" --why "<reason>". Also replace, retire.`,
+    `  ${pad(`${self} review`)}Go through what is waiting for you.`,
+    `  ${pad(`${self} receipt`)}What Unl handed your agent in the latest session.`,
+    `  ${pad(`${self} help local`)}Every command of the free Unl.`,
+    "",
+    "The hosted Unl, the same record in every AI you use (an account, when you want one):",
+    `  ${pad(`${self} connect`)}Add the hosted Unl to Claude Code in this project (--cursor for Cursor, --codex for Codex).`,
+    `  ${pad(`${self} login`)}Sign in on this machine. \`${self} logout\` removes this machine's key.`,
+    `  ${pad(`${self} terminal`)}The Unl terminal: Unl's side of each turn, live. Bare \`${self}\` opens it once you are signed in.`,
+    `  ${pad(`${self} up`)}What moves a project up, and the one command that does it.`,
+    "",
     `  ${pad(`${self} --version`)}Print the version.`,
     "",
-    `init also takes --dry-run (show what it would change), --repair (update Unl's own entries in place),`,
+    `connect also takes --dry-run (show what it would change), --repair (update Unl's own entries in place),`,
     `--yes, --no-import and --from <where you came from>. It never adds Unl a second time.`,
     "",
     "More: unlimitless.ai/developers",
@@ -90,7 +104,7 @@ function unwiredProject(dir, { home, exists = fs.existsSync, read = (f) => fs.re
 
 /** The quiet offer, when the folder is a project Unl is not wired into. Pure. */
 function initOffer(self = "unl") {
-  return `This folder is not wired to Unl yet. Run \`${self} init\` here to add Unl to Claude Code.`;
+  return `This folder is not wired to the hosted Unl yet. Run \`${self} connect\` here to add it to Claude Code.`;
 }
 
 /**
