@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Trying Unl? Ask here
+    url: https://github.com/orgs/Unlimitless-Inc/discussions/9
+    about: Setup questions and anything unclear, answered in the open.
   - name: Report a security problem
     url: https://github.com/Unlimitless-Inc/unl/security/advisories/new
     about: Report it privately, never in a public issue.

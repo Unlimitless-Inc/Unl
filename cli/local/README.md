@@ -1,5 +1,7 @@
 # Unl
 
+The why agent for your AI stack.
+
 Unl keeps what you decided and why, on your own machine, and hands it to your coding agent when it bears.
 
 Never update your CLAUDE.md again.
@@ -13,6 +15,89 @@ Run it in a project. There is no account, no key and nothing to sign in to, at i
 It needs Node.js 20 or later, which is what puts `npx` on your machine. Every command below runs through `npx unlimitless`, so nothing has to be installed first.
 
 Every decision is kept in the open [kept-decision format](../../decision-format), which any tool can read and check.
+
+## What it does
+
+- It reads the rules you already wrote for your agents and, on your yes, keeps each one as a decision with its reason.
+- It hands your agent the decisions that bear on what you asked, and nothing when nothing bears.
+- It speaks first when your agent is about to do something you decided against.
+- It notices when you state a new rule and asks once whether to keep it. When the new one changes an old one, the old one is marked replaced.
+- It writes AGENTS.md and CLAUDE.md from that record, so every tool that reads them has your current decisions.
+
+## Try it in 60 seconds
+
+In a new folder:
+
+```bash
+mkdir unl-try && cd unl-try && git init -q
+echo 'Use pnpm, never npm. We switched because npm kept breaking the lockfile.' > CLAUDE.md
+npx unlimitless init
+```
+
+Say yes to the one decision it finds. Then open Claude Code in the folder and type:
+
+```text
+From now on we use bun instead of pnpm, because pnpm's install was too slow on CI.
+```
+
+Unl says this reads as a change to the pnpm decision, and asks you to reply "keep" with one line on why. Reply `keep, pnpm was too slow on CI`. Unl says it kept the bun decision and that it replaces the pnpm one. Back in the terminal:
+
+```bash
+npx unlimitless status
+```
+
+It says 1 decision is kept and 1 was replaced. AGENTS.md and CLAUDE.md now carry the bun decision with its reason, and the pnpm one under Replaced. In your next session, ask the agent to install the dependencies, and it is handed the bun decision.
+
+Without Claude Code, the same change works at the terminal: `npx unlimitless list` gives the pnpm decision's id, and `npx unlimitless replace <id> "Use bun, not pnpm." --why "pnpm's install was too slow on CI."` replaces it.
+
+## How it works
+
+- **Hooks.** `init` adds hooks to your agent: Claude Code's (in `.claude/settings.local.json`), which Cursor also runs, and Codex's with `--codex`. They run at each ask and before an edit or a command.
+- **The record.** Your decisions live in `.git/unl/` inside the project, never in git itself. Every worktree of the clone shares it. Readable copies go to `.unl/decisions/`, and to a marked section of AGENTS.md and CLAUDE.md, for you to commit.
+- **Choosing what bears.** Unl first gathers the decisions that might bear, with no model. On Claude Code and Codex it then asks your agent's own command line which of them do, for one short turn: `claude -p`, on Sonnet unless you set another model, or `codex exec` with your configured model, at the ask only. The answer is only which ones. What your agent is handed is your decision and your reason exactly as you kept them.
+- **Cursor's simpler matching.** Cursor is not asked. There, Unl goes by the words of what you asked and the file being changed.
+- **Speaking first.** Whether a command or an edit crosses a decision is decided by Unl itself, at once, with no model. It stops that one call, once, so the decision reaches you before the action.
+
+## What it does not do yet
+
+- It hands over more than bears. On the reading below, about 3 in 10 of what it handed bore on the work, and how often it stays quiet on work nothing bears on has not been read.
+- Cursor gets no model choosing what bears, and Cursor's prompt hook did not fire in a headless run, so that part is unproven there.
+- On Codex, the choosing was run live through the hook, but a whole Codex session with Unl has not been run.
+- Agent sessions have been run live on macOS. On Linux, Windows and WSL, the package's install and `init` are checked in CI, without a live agent.
+- It is not a sandbox and never grants or refuses permission. Use it beside your tool's own permission settings.
+- `npx unlimitless remove` leaves a few things in place. Uninstall below says which.
+
+## Privacy and telemetry
+
+- No account, no key and no sign-in, at install or in use.
+- The record stays in `.git/unl/` on your machine. It goes to the hosted Unl only if you run `npx unlimitless connect`, or the command `npx unlimitless up` gives you.
+- Choosing what bears goes through your agent's own command line and provider, and counts against your usage there. `npx unlimitless judge off` stops it, and Unl then goes by words.
+- Telemetry is off until you run `npx unlimitless telemetry on`. `DO_NOT_TRACK=1` stops it, and it never sends from CI. When on, it sends four events, each with the version, a random machine id and, where it applies, a count. It never sends decision text, prompts, code or project names. Telemetry below lists the events.
+
+## Uninstall
+
+```bash
+npx unlimitless remove           # the record, and Unl's hooks in .claude/settings.local.json
+npx unlimitless remove --files   # also Unl's section in AGENTS.md and CLAUDE.md, and the .unl/ folder
+```
+
+`remove` leaves the shared hook runtime in `~/.unl/open/`, Codex's hooks if you ran `init --codex`, and any Unl server entry in Claude Code's or Cursor's MCP settings. Delete those by hand to take everything out.
+
+## Questions
+
+**Does anything leave my machine?** Your record does not, unless you move it to the hosted Unl yourself. Choosing what bears goes through your agent's own provider, as above. Telemetry is off unless you turn it on.
+
+**Which model does it use, and what does it cost?** The free Unl costs nothing. On Claude Code it runs `claude -p` on Sonnet by default, and on Codex `codex exec` with your configured model, so those calls count against your existing usage. Cursor makes no model call. `init` makes none either.
+
+**Which agents does it work with?** Claude Code, with Cursor running the same hooks, and Codex with `init --codex`. Any other tool that reads AGENTS.md or CLAUDE.md gets your decisions through the file, without the hooks.
+
+**Does it slow my agent down?** The model call is capped at 12 seconds on Claude Code and 15 on Codex (`UNL_JUDGE_TIMEOUT_MS` changes it). If it runs out, Unl hands what the work plainly names in full and a capped set of others as one line each, never your whole record.
+
+**Does it actually help?** On a development reading, not a release test, of 200 pieces of work in 20 public repositories, 302 of the 358 decisions that bore reached the agent. In 56 tasks across 9 repositories with a stale rules file, run once each, the work needed 5 corrections with Unl, 7 with a well-kept file, 8 with the stale file and 10 with no file. That shows fewer than no file. It does not show better than a well-kept file.
+
+**Why is `unl` not found?** `npx` does not put a `unl` command on your PATH. Every command works as `npx unlimitless <command>`, and `npm install -g unlimitless` gives you `unl` as well.
+
+**Can my team share it?** Commit `.unl/decisions/` and the section in your rules files. A teammate who pulls and runs `npx unlimitless init` gets the same decisions, and `npx unlimitless sync` takes in ones that arrive later.
 
 ## The first minute
 
@@ -104,9 +189,9 @@ It also writes one readable file per decision into `.unl/decisions/`. Commit the
 
 ## What is on your machine, and what leaves it
 
-Unl itself sends nothing, unless you turn on the ping described under Telemetry below. It is off until you do. With it off the package makes no network connection, and its tests fail if any part of it ever tries to. The one folder that can send anything is the ping's own, and its tests fail if it sends before you have turned it on.
+The free Unl sends nothing of its own, unless you turn on the ping described under Telemetry below. It is off until you do. With it off, the free Unl makes no network connection of its own, and its tests fail if it ever tries to. Within the free Unl, the one folder that can send anything is the ping's own, and its tests fail if it sends before you have turned it on. The same package also holds the hosted Unl's commands (`login`, `connect`, `up` and the Unl terminal), and those talk to the hosted service when you run them.
 
-To choose which decisions bear, Unl asks the agent you already run, for one short turn. What it shows that agent is your decisions, what you asked and the lines about to be written. That goes where your agent's prompts already go and nowhere else, and your agent is shown all three anyway. `npx unlimitless judge off` stops it, and Unl then goes by the words of what you ask.
+On Claude Code and Codex, to choose which decisions bear, Unl asks your agent's own command line for one short turn: `claude -p`, on Sonnet unless you set another model, or `codex exec` with your configured model, at the ask only. What it shows that model is your decisions, what you asked and the lines about to be written. That call goes to your agent's provider and counts against your usage there. Cursor is not asked. `npx unlimitless judge off` stops it, and Unl then goes by the words of what you ask.
 
 | What | Where | In git |
 |---|---|---|
@@ -176,7 +261,7 @@ See [SECURITY.md](SECURITY.md) for the whole of it, including what has not been 
 
 **1. What you decided never gets mixed up with what something else suggested.** Built as above. A web page, an agent's suggestion and your settled decision are different kinds of row and only your yes turns one into another. It is tested against planted words: a proposal claiming you agreed, pasted text, a flag with nobody there, an agent's own shell. It is not a sandbox, and [SECURITY.md](SECURITY.md) says where that line is.
 
-**2. What bears arrives and the rest stays out.** Unl gathers the decisions that might bear with no model, and then asks the agent you already run which of them do. That agent's model answers with which ones and never with words of its own, so what your agent is handed is your decision and your reason exactly as you kept them. What bears is handed in full. What might bear is handed as one line. A decision the work names outright is never left out, and whether an action crosses a decision is decided by Unl itself, at once, with no model. A rule that applies to every change, such as how commits are written, is left to the rules file your agent already reads on every turn. A development reading on 20 public repositories Unl had never seen (not a release test) took the 200 pieces of real work in them that a kept decision bore on. Of the 358 decisions that bore, 302 reached the agent when the ask was long and 300 when it was one line, which is a little over 8 in 10. The words of the ask alone had reached about 2 in 10. About 3 in 10 of what it handed on that work bore. How often it stays quiet on work nothing bears on has not been read for this build. So it finds most of what bears and still hands over more than it should, and it does not claim otherwise. If your agent's model cannot be asked, Unl hands what the work plainly names in full and the nearest others as one line each, never your whole record, and tells you once. `npx unlimitless serve --prompt "..."` shows what Unl would hand over for any prompt, file or command, and why, and `npx unlimitless serve --candidates` shows the wider list that is chosen from.
+**2. What bears arrives and the rest stays out.** Unl gathers the decisions that might bear with no model, and then, on Claude Code and Codex, asks your agent's own command line which of them do. That model answers with which ones and never with words of its own, so what your agent is handed is your decision and your reason exactly as you kept them. What bears is handed in full. What might bear is handed as one line. A decision the work names outright is never left out, and whether an action crosses a decision is decided by Unl itself, at once, with no model. A rule that applies to every change, such as how commits are written, is left to the rules file your agent already reads on every turn. A development reading on 20 public repositories Unl had never seen (not a release test) took the 200 pieces of real work in them that a kept decision bore on. Of the 358 decisions that bore, 302 reached the agent when the ask was long and 300 when it was one line, which is a little over 8 in 10. The words of the ask alone had reached about 2 in 10. About 3 in 10 of what it handed on that work bore. How often it stays quiet on work nothing bears on has not been read for this build. So it finds most of what bears and still hands over more than it should, and it does not claim otherwise. If your agent's model cannot be asked in time, Unl hands what the work plainly names in full and the nearest others as one line each, never your whole record, and tells you once. On Cursor, and on Codex before an action, no model is asked at all, and Unl goes by the words. `npx unlimitless serve --prompt "..."` shows what Unl would hand over for any prompt, file or command, and why, and `npx unlimitless serve --candidates` shows the wider list that is chosen from.
 
 **3. A change reaches an agent that is already working.** When a decision an agent was handed is replaced, that agent is told on its very next action, with what replaced it and which files it has touched since. This works wherever Unl's hooks run. An agent on a tool without hooks keeps the earlier version until it next reads the rules file.
 
@@ -213,19 +298,19 @@ npx unlimitless replace <id> "<decision>" --why "<reason>"
 npx unlimitless retire <id> --why "<reason>"
 npx unlimitless review               go through what is waiting for you
 npx unlimitless sync                 take in decisions that arrived through git
-npx unlimitless remove               take Unl out of this project (add --files to remove the decision files too)
+npx unlimitless remove               take Unl out of this project (add --files to remove its section in your rules files and .unl/ too)
 npx unlimitless receipt              what Unl handed your agent in the latest session
 npx unlimitless receipt --copy       the moment Unl spoke first, ready to paste into a post
 npx unlimitless adr                  the project's architecture decision records, shown back as decisions
 npx unlimitless telemetry            the opt-in ping: what it would send, and on, off, show, reset
 npx unlimitless serve --prompt "..." show what Unl would hand over, and why
-npx unlimitless judge on | off       have your agent's own model choose what bears, or go by the words of the ask
+npx unlimitless judge on | off       on Claude Code and Codex, have your agent's model choose what bears, or go by the words of the ask
 npx unlimitless export               every kept decision as a record in the open format
 ```
 
 ## When you want more
 
-This is the whole mechanism, running on one machine. The hosted Unl is the same record in every AI you use, including the chat apps and your phone, kept in step across your machines and your team, with Agent Unl choosing what bears and nothing to set up. It is in the same package: `npx unlimitless login` signs this machine in and `npx unlimitless connect` adds it to a project. `npx unlimitless up` gives you the one command that moves a project up. Each decision that still stands comes across with its reason exactly as you kept it, and you keep it there with a yes. Nothing leaves your machine until you run that command.
+This is the whole mechanism, running on one machine. The hosted Unl is the same record in every AI you use, including the chat apps and your phone, kept in step across your machines and your team, with Agent Unl choosing what bears and nothing to set up. It is in the same package: `npx unlimitless login` signs this machine in and `npx unlimitless connect` adds it to a project. `npx unlimitless up` gives you the one command that moves a project up. Each decision that still stands comes across with its reason exactly as you kept it, and you keep it there with a yes. Your record leaves your machine only when you run that command.
 
 ## Licence
 

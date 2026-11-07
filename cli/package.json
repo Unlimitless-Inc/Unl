@@ -2,6 +2,21 @@
   "name": "unlimitless",
   "version": "0.4.1",
   "description": "Unl keeps what you decided and why, on your own machine, and hands it to your coding agent when it bears. Free, no login: npx unlimitless init. The hosted Unl is the step up: npx unlimitless connect.",
+  "keywords": [
+    "claude-code",
+    "cursor",
+    "codex",
+    "mcp",
+    "model-context-protocol",
+    "coding-agent",
+    "ai-agents",
+    "agent-memory",
+    "claude-md",
+    "agents-md",
+    "context-engineering",
+    "decision-records",
+    "cli"
+  ],
   "homepage": "https://unlimitless.ai/developers",
   "repository": {
     "type": "git",
