@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping. This repository holds the parts of Unl that run on your side: the `unl` command, the AI SDK package, the Cursor plugin, the examples and the decision format. Unl itself is a hosted service and its code is not here, so a change to how Unl chooses or serves decisions cannot be made in this repository. Report it as an issue instead.
+This repository holds the open-source Unl product for coding agents, including the local decision store, matching and judge adapters, hooks, command, decision format, SDK and examples. Contributions to local decision selection and delivery belong here. The hosted server is not included.
 
 ## What we take
 
@@ -31,4 +31,14 @@ You are welcome to. Say so in the pull request, and read every line before you s
 
 ## Licence
 
-By contributing you agree that your contribution is licensed under the MIT licence in [LICENSE](LICENSE).
+Contributions use the licence of the component they change.
+
+### Component licences
+
+| Component | Licence | Licence text |
+|---|---|---|
+| `cli/`, including `cli/local/` | Apache-2.0 | [cli/LICENSE](cli/LICENSE) |
+| `packages/ai-sdk/` | MIT | [packages/ai-sdk/LICENSE](packages/ai-sdk/LICENSE) |
+| `decision-format/`, `examples/`, plugins and remaining repository material | MIT | [LICENSE](LICENSE) |
+
+The export validates package metadata against this map. It never changes the licence of an unknown package to make it fit.

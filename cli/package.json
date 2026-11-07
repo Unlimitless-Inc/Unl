@@ -1,7 +1,7 @@
 {
   "name": "unlimitless",
   "version": "0.4.1",
-  "description": "Unl keeps what you decided and why, on your own machine, and hands it to your coding agent when it bears. Free, no login: npx unlimitless init. The hosted Unl is the step up: npx unlimitless connect.",
+  "description": "Unl, the open-source why agent for your coding agents.",
   "keywords": [
     "claude-code",
     "cursor",

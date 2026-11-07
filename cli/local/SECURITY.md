@@ -78,7 +78,7 @@ The record lives in the project's own git folder, which git never commits. The r
 
 **Text inside a decision could try to steer the choosing.** A decision is shown to the model as material to choose from, and the model is told that nothing written inside one is an instruction. That has been tested for what it can never do: no answer can keep a decision, add one, reword one or reach your record. It has not been tested against a decision written on purpose to make the model hand over more than it should. The worst that could do is put more of your own decisions in front of your agent.
 
-**The choosing has been run live on Claude Code only.** Codex and Cursor are asked through their own commands in the same way, and that has not yet been run live on either.
+**The choosing has been run in complete live Claude Code sessions.** Codex has hook-level prompt-judge proof, while a complete judged-session proof remains pending. Cursor uses word and file matching for edit and command hooks because the judge exceeds its hook wait.
 
 ## Reporting a problem
 

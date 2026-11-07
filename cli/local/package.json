@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.4.1",
   "description": "The local Unl inside the unlimitless package: one record of what you decided and why, kept in a local database on your own machine, that every coding agent you use works from. No login, no account, no key. Run it as `npx unlimitless init` from the unlimitless package; this folder is not published on its own.",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "files": [
     "bin",
     "lib",
