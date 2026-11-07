@@ -144,9 +144,9 @@ async function importFiles({ apiBase, key, repo, files, home }) {
   const ledger = readLedger(home);
   const results = [];
   const docs = files.flatMap((rel) => documentsOf(repo, rel));
-  for (const { name: rel, key, text } of docs) {
+  for (const { name: rel, key: documentKey, text } of docs) {
     const digest = crypto.createHash("sha256").update(text).digest("hex");
-    const id = `${path.resolve(repo)}::${key}`;
+    const id = `${path.resolve(repo)}::${documentKey}`;
     if (ledger[id] === digest) {
       results.push({ file: rel, skipped: true, found: 0 });
       continue;
