@@ -1,5 +1,7 @@
 # Unl, the open-source why agent for your coding agents.
 
+If Unl keeps one decision for you, a star helps other builders find it.
+
 Unl keeps what you decided and why on your machine, brings relevant decisions into your coding agent's work, and keeps track when you change your mind.
 
 [Documentation](https://unlimitless.ai/docs) · [Discussions](https://github.com/Unlimitless-Inc/Unl/discussions)
